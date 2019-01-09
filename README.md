@@ -44,12 +44,6 @@ Para crear un nuevo objeto se cuenta con la función del módulo de objetos del 
 
 Para que el objeto empiece a responder mensajes adecuadamente se le deben adjuntar scripts de comportamiento con la función __agregar_comportamiento(nombre_script)__. Los scripts de comportamiento son otro tipo de archivos del HUB sin ninguna otra particularidad que la de definir funciones. Un objeto sabrá responder un mensaje si alguno de sus scripts de comportamiento asociados implementa la función correspondiente. Para que un archivo sea reconocido como un script de comportamiento por el HUB, este debe estar ubicado en la carpeta __comportamiento__ dentro de la _ruta_raiz_ y usar el código __Comportamiento__ en la segunda línea.
 
-## Programas
-
-Hasta ahora los comandos fueron sólo funciones que se ejecutan ininterrumpidamente de principio a fín. Pero el HUB permite también definir programas que se ejecuten como procesos en segundo plano. Los programas del HUB también son scripts de tipo comando así que también se ejecutan escribiendo su nombre en la terminal del HUB. En cualquier momento, un comando puede lanzar un proceso llamando a la función __nuevo(data)__ del módulo de procesos del HUB.
-
-Como son scripts de comandos, los scripts de programas deben implementar la función __comando(argumentos)__ que será ejecutada al ingresar el texto correspondiente en la terminal. Además, deben definir la función __proceso(data)__ que será ejecutada cuando se lance el nuevo proceso. Notar que los procesos siguen vivos por defecto y no finalizan hasta que llamen explícitamente a la función __finalizar()__ del módulo de procesos del HUB (o hasta que el proceso sea terminado desde afuera).
-
 ## Módulos del HUB
 
 Cada módulo se implementa en un script, asociado a un nodo de Godot. El nodo raíz es el HUB, que tiene asociado el script __HUB.gd__. Este script crea un nodo por cada módulo del HUB, inserta ese nodo como hijo del nodo HUB y le asocia su script correspondiente (del mismo nombre). Todos los scripts que definen los módulos del HUB pueden verse en la carpeta __src__. Después de la etapa de inicialización, el nodo HUB sirve como punto de entrada para acceder a los distintos módulos. Es por esto que se toma como convención que todos los archivos que sean scripts mantengan una variable con una referencia al nodo HUB.
