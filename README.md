@@ -36,7 +36,7 @@ Otra premisa del HUB es proveer al usuario una capa de abstracción orientada a 
 
 En el HUB, un objeto puede tener varios componentes y varios scripts asociados. En lugar de ejecutar funciones, los objetos responden a mensajes. A cualquier objeto se le puede enviar cualquier mensaje. Para enviarle un mensaje a un objeto se debe usar la función __mensaje(metodo, parametros)__ que todo objeto implementa. A través de la abstracción de mensajes y métodos, un objeto puede responder a un mensaje ejecutando una función definida en alguno de sus scripts adjuntos. Luego, el conjunto de funciones que puede ejecutar un objeto del HUB es la unión entre las funciones definidas en cada uno de los scripts que el objeto posee.
 
-Nota: A diferencia del paradigma orientado a objetos, en el HUB no todo es un objeto. Muchos nodos (por ejemplo, los módulos del HUB) no respetan la interfaz de objeto y los objetos están compuestos por cosas que no necesariamente son objetos. Se consideran objetos del HUB únicamente los nodos que tienen adjunto el script __objeto__ y fueron creados utilizando el módulo de objetos del HUB.
+> Nota: A diferencia del paradigma orientado a objetos, en el HUB no todo es un objeto. Muchos nodos (por ejemplo, los módulos del HUB) no respetan la interfaz de objeto y los objetos están compuestos por cosas que no necesariamente son objetos. Se consideran objetos del HUB únicamente los nodos que tienen adjunto el script __objeto__ y fueron creados utilizando el módulo de objetos del HUB.
 
 El principal objetivo de esta abstracción es desarrollar scripts de comportamiento lo más minimales posible para que sea fácil modificar los existentes y crear nuevos. Esto no puede lograrse en el entorno de Godot ya que para definir el comportamiento de un nodo, toda la funcionalidad deseada debe estar implementada en un mismo script. Al igual que en el caso de los nodos de Godot, los objetos se organizan en una jerarquía tipo árbol. Al iniciar el HUB existe un único objeto (raíz de la jerarquía de objetos) llamado _Mundo_.
 
@@ -55,6 +55,10 @@ Para crear un proceso se debe llamar a la función __nuevo(programa, argumentos)
 Otra diferencia importante entre comandos y programas es que los programas pueden, a su vez, definir comandos. Esto significa que, tras lanzar un proceso, los comandos lanzados en la terminal pueden interpretarse tanto como comandos globales (los descriptos hasta ahora) o como comandos dentro del programa. Para definir un comando "X" en un programa sólo hay que declarar una función "__X(argumentos)" en el script del programa. Cuando el proceso esté en ejecución, al lanzar el comando "X" en la terminal, en lugar de ejecutar el script _X.gd_ se ejecutará la función "\_\_X" correspondiente en el script de dicho proceso (si es que esta está definida). Si el proceso en ejecución no tiene definido el comando ingresado, entonces se ejecuta el comando global. Para forzar al HUB a ejecutar el comando global aunque el proceso actual tenga definido el comando, se le debe anteponer el caracter "!".
 
 ### Bibliotecas
+
+### Comportamiento
+
+### Objeto
 
 ## Módulos del HUB
 
@@ -80,7 +84,7 @@ Este módulo controla el manejo de eventos. Todos los eventos del HUB pasan por 
   - 1 : Cursor invisible
   - 2 : Sin cursor (scroll infinito)
 
-Nota: Cuando se habla de botones, puede ser una tecla del teclado o un botón del mouse, ver constantes _KEY\__ y _MOUSE\__ [aquí](URL https://docs.godotengine.org/en/2.1/classes/class_@global%20scope.html).
+> Nota: Cuando se habla de botones, puede ser una tecla del teclado o un botón del mouse, ver constantes _KEY\__ y _MOUSE\__ [aquí](URL "https://docs.godotengine.org/en/2.1/classes/class_@global%20scope.html").
 
 ### Pantalla
 
@@ -96,17 +100,30 @@ Este módulo manipula los objetos del HUB. Provee las siguientes funciones:
 
 ### Bibliotecas
 
+Este módulo administra las bibliotecas del HUB. Provee las siguientes funciones:
+* importar(biblioteca) : Devuelve el nodo correspondiente a la biblioteca solicitada. Devuelve _null_ si no se encuentra.
+
+### Terminal
+
+### Nodo Usuario
+
+### Errores
+
+### Procesos
+
+## Objetos del HUB
+
 ## Creando nuevos archivos para el HUB
 
 En la carpeta __plantillas__ dentro de la _ruta_raiz_ hay plantillas base de cada tipo de archivo. También se pueden ver los archivos ya existentes en cada carpeta para usar como guía. Excepto archivos con propósitos específicos o archivos multimedia, todos los archivos del HUB deben contener en la primera línea doble _#_, un espacio y el nombre del archivo y en la segunda línea doble "#", un espacio y el código que indica el tipo de archivo. Opcionalmente, la cuarta línea puede contener un _#_, un espacio y una descripción del archivo.
 
 ### Scripts
 
-Como los scripts deben ser scripts válidos de GDScript, deben tener la línea "extends Node" para que Godot pueda adjuntárselos a un nodo. Para ser scripts válidos del HUB, deben implementar la función __inicializar(hub)__, la cual será llamada con el HUB como parámetro cuando el script sea agragado a un nodo de Godot. No es obligatorio pero se recomienda mantener la variable _HUB_ (e inicializarla con el parámetro _hub_) para acceder al HUB y a todos sus módulos.
+Como los scripts deben ser scripts válidos de GDScript, deben tener la línea "extends Node" para que Godot pueda adjuntárselos a un nodo. Para ser scripts válidos del HUB, deben implementar la función __inicializar(hub)__, la cual será llamada con el HUB como parámetro cuando el script sea agragado a un nodo de Godot. No es obligatorio pero se recomienda mantener la variable _HUB_ (e inicializarla con el parámetro _hub_) para acceder al HUB y a todos sus módulos. Esta función debe devolver un booleano que indique si el script se inicializó correctamente. Si no fue así, se asume que el script que lo creó puede eliminar al nodo correspondiente ya que este quedó en un estado inconsistente.
 
 #### Comandos
 
-Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
+Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. El parámetro _argumentos_ se debe interpretar como una lista correspondiente a los argumentos ingresados al lanzar el comando. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
 
 #### Programas
 
@@ -118,7 +135,7 @@ Las bibliotecas no tienen restricciones adicionales. El código para archivos de
 
 ### Lotes de comandos
 
-Los lotes de comandos no tienen restricciones adicionales. El código para archivos de lotes de comandos es __SH__.
+Los lotes de comandos no tienen restricciones adicionales. El código para archivos de lotes de comandos es __SH__. Si el HUB tiene el comando __sh__ y el lote de comandos __INI.gd__, tras haberse inicializado ejecutará "sh INI.gd" en la terminal.
 
 ### Consideraciones a la hora de escribir un script para el HUB
 
