@@ -1,6 +1,6 @@
 # hub-godot-project
 
-Este repositorio contiene los archivos del proyecto de [Godot Engine](URL "https://godotengine.org/") 2.1.4 correspondiente al Core del HUB.
+Este repositorio contiene los archivos del proyecto de [Godot Engine](https://godotengine.org/) 2.1.4 correspondiente al Core del HUB.
 
 ## ¿Qué es el HUB? ¿Qué es el Core?
 
@@ -84,7 +84,7 @@ Este módulo controla el manejo de eventos. Todos los eventos del HUB pasan por 
   - 1 : Cursor invisible
   - 2 : Sin cursor (scroll infinito)
 
-> Nota: Cuando se habla de botones, puede ser una tecla del teclado o un botón del mouse, ver constantes _KEY\__ y _MOUSE\__ [aquí](URL "https://docs.godotengine.org/en/2.1/classes/class_@global%20scope.html").
+> Nota: Cuando se habla de botones, puede ser una tecla del teclado o un botón del mouse, ver constantes _KEY\__ y _MOUSE\__ [aquí](https://docs.godotengine.org/en/2.1/classes/class_@global%20scope.html).
 
 ### Pantalla
 
