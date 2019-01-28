@@ -44,6 +44,12 @@ Para crear un nuevo objeto se cuenta con la función del módulo de objetos del 
 
 Para que el objeto empiece a responder mensajes adecuadamente se le deben adjuntar scripts de comportamiento con la función __agregar_comportamiento(nombre_script)__. Los scripts de comportamiento son otro tipo de archivos del HUB sin ninguna otra particularidad que la de definir funciones. Un objeto sabrá responder un mensaje si alguno de sus scripts de comportamiento asociados implementa la función correspondiente. Para que un archivo sea reconocido como un script de comportamiento por el HUB, este debe estar ubicado en la carpeta __comportamiento__ dentro de la _ruta_raiz_ y usar el código __Comportamiento__ en la segunda línea.
 
+## Manejo de errores
+
+Godot no provee funcionalidad para manejar excepciones así que siempre que se esté modificando la funcionalidad del HUB debería ejecutarse desde el entorno de Godot y no utilizando el Core compilado. La forma de simular algo parecido al manejor de excepciones es a través de la clase __Error__ declarada en el módulo de errores del HUB. Las funciones pueden devolver una instancia de un error en caso de que fallen por alguna razón. La función que recibe un error puede decidir qué hacer con él. La clase error sólo contiene una variable con el mensaje de error y, eventualmente, una referencia a un error previo en caso de que el error haya sido generado por un error anterior.
+
+El módulo de errores define la función __error(mensaje, stack_error=null)__ que devuelve un error genérico con el mensaje pasado por parámetro. Otros módulos definen otros tipos de errores como funciones. Por ejemplo, el módulo de archivos define la función __archivo_inexistente(ruta, archivo, stack_error=null)__ que devuelve un error con el mensaje correspondiente, llamando a la función __error(mensaje, stack_error=null)__ del módulo de errores. De esta forma, se pueden crear nuevos tipos de errores. El módulo de errores también implementa la función __fallo(resultado)__ que determina si el resultado de un llamado a una función generó un error. Esta función puede utilizarse para verificar el resultado tras un llamado a una función que puede fallar.
+
 ## Otros tipos de archivos
 
 ### Programas
@@ -64,14 +70,21 @@ Otra diferencia importante entre comandos y programas es que los programas puede
 
 Cada módulo se implementa en un script, asociado a un nodo de Godot. El nodo raíz es el HUB, que tiene asociado el script __HUB.gd__. Este script crea un nodo por cada módulo del HUB, inserta ese nodo como hijo del nodo HUB y le asocia su script correspondiente (del mismo nombre). Todos los scripts que definen los módulos del HUB pueden verse en la carpeta __src__. Después de la etapa de inicialización, el nodo HUB sirve como punto de entrada para acceder a los distintos módulos. Es por esto que se toma como convención que todos los archivos que sean scripts mantengan una variable con una referencia al nodo HUB. Esta variable puede inicializarse cuando se ejecuta la función __inicializar(hub)__ del script en cuestión. El HUB provee las siguientes funciones:
 * mensaje(texto) : Envía un mensaje al HUB y lo muestra en la terminal.
+* error(error) : Notifica que se generó un error. Toma como parámetro el error generado y también lo devuelve. El error puede crearse con la función __error(mensaje, stack_error=null)__ del módulo de errores, aunque es recomendable encapsular ese llamado dentro de una función cuyo nombre indique el tipo de error generado.
 * salir() : Finaliza la ejecución.
 
 ### Archivos
 
 Este módulo se utiliza para acceder a los archivos dentro de la _ruta_raiz_. Provee las siguientes funciones:
-* abrir(ruta, nombre) : Carga el contenido de un archivo. Devuelve _null_ si el archivo no existe.
-* leer(ruta, nombre) : Carga el contenido de un archivo y lo devuelve como texto. Devuelve _null_ si el archivo no existe.
+* abrir(ruta, nombre, tipo=null) : Carga el contenido de un archivo. Si se le pasa como tercer parámetro un código de tipo hace todas las verificaciones necesarias para que el archivo sea un archivo válido de ese tipp y devuelve un error si no cumple alguna de esas condiciones. También puede devolver un error si el archivo no existe.
+* leer(ruta, nombre) : Carga el contenido de un archivo y lo devuelve como texto. Devuelve un error si el archivo no existe.
 * existe(ruta, nombre) : Devuelve si existe el archivo solicitado.
+
+También declara los siguientes errores:
+* archivo_inexistente(ruta, archivo, stack_error=null) : El archivo _archivo_ no se encuentra en la ruta _ruta_.
+* archivo_invalido(archivo, tipo, stack_error=null) : El archivo _archivo_ no es un archivo válido de tipo _tipo_.
+* encabezado_invalido(archivo, stack_error=null) : El encabezado del archivo _archivo_ es inválido.
+* funciones_no_implementadas(archivo, tipo, stack_error=null) : El archivo _archivo_ no implementa las funciones necesarias para ser de tipo _tipo_.
 
 ### Eventos
 
@@ -96,12 +109,19 @@ Este módulo controla todo lo relacionado con la pantalla. Mantiene la variable 
 
 Este módulo manipula los objetos del HUB. Provee las siguientes funciones:
 * crear(hijo_de=HUB.nodo_usuario.mundo) : Crea un nuevo objeto vacío como hijo de _hijo\_de_ en la jerarquía de objetos. Si no se le pasa ningún parámetro, lo crea como hijo del objeto Mundo. Si se le pasa como parámetro _null_, no lo agrega a la jerarquía de objetos.
-* localizar(nombre_completo, desde=HUB.nodo_usuario.mundo) : Ubica a un objeto por su nombre completo. Es decir, si se tiene un objeto _Mano_ hijo de otro objeto que se llama _Brazo_, para ubicar al objeto _Mano_ como parámtro nombre_completo se le debe pasar el texto "Brazo/Mano". Una alternativa es, si ya se tiene al objeto Brazo, pasarlo como parámetro _desde_ para empezar a buscar a partir de él en la jerarquía de objetos. Luego, como parámetro nombre_completo se le debe pasar sólo "Mano". Notar que en el primer caso, no es necesario anteponer el nombre del Mundo ya que por defecto, es a partir de ese objeto que se empieza a buscar.
+* localizar(nombre_completo, desde=HUB.nodo_usuario.mundo) : Ubica a un objeto por su nombre completo. Es decir, si se tiene un objeto _Mano_ hijo de otro objeto que se llama _Brazo_, para ubicar al objeto _Mano_ como parámtro nombre_completo se le debe pasar el texto "Brazo/Mano". Una alternativa es, si ya se tiene al objeto Brazo, pasarlo como parámetro _desde_ para empezar a buscar a partir de él en la jerarquía de objetos. Luego, como parámetro nombre_completo se le debe pasar sólo "Mano". Notar que en el primer caso, no es necesario anteponer el nombre del Mundo ya que por defecto, es a partir de ese objeto que se empieza a buscar. Devuelve un error si no encuentra al objeto solicitado.
+
+También declara los siguientes errores:
+* objeto_inexistente(nombre_completo, desde, stack_error=null) : No se encontró ningún objeto con nombre _nombre\_completo_ en la jerarquía desde el objeto _desde_.
 
 ### Bibliotecas
 
 Este módulo administra las bibliotecas del HUB. Provee las siguientes funciones:
 * importar(biblioteca) : Devuelve el nodo correspondiente a la biblioteca solicitada. Devuelve _null_ si no se encuentra.
+
+También declara los siguientes errores:
+* biblioteca_inexistente(biblioteca, stack_error=null) : La biblioteca _biblioteca_ no se encuentra.
+* biblioteca_no_cargada(biblioteca, stack_error=null) : La biblioteca _biblioteca_ no se pudo cargar.
 
 ### Terminal
 
@@ -109,7 +129,19 @@ Este módulo administra las bibliotecas del HUB. Provee las siguientes funciones
 
 ### Errores
 
+Este módulo provee funciones para verificar condiciones y manejar excepciones antes de que el HUB falle. También se define la clase __Error__ para devolver ante fallas. Las funciones provistas son las siguientes:
+* error(texto, stack_error=null) : Crea y devuelve un error genérico. Si se le pasa un segundo parámetro lo guarda como referencia al error previo.
+* fallo(resultado) : Retorna si el resultado de una función generó un error
+* try(nodo, funcion, parametros=[]) : Intenta ejecutar una función en un nodo. Si lo logra, devuelve el resultado de la ejecución. Si no, devuelve un error.
+* verificar_implementa_funcion(nodo, funcion, cantidad_de_parametros) : Verifica que el nodo _nodo_ implemente la función _funcion_ con _cantidad\_de\_parametros_ parámtros. Si no es así, devuelve un error.
+
+También declara los siguientes errores:
+* funcion_no_implementada(nodo, funcion, parametros, stack_error=null) : El nodo _nodo_ no implementa la función _funcion_ con _parametros_ parametro(s).
+* try_fallo(nodo, funcion, stack_error=null) : Falló al intentar ejecutar la función _funcion_ en el nodo _nodo_.
+
 ### Procesos
+
+### Testing
 
 ## Objetos del HUB
 
@@ -123,7 +155,7 @@ Como los scripts deben ser scripts válidos de GDScript, deben tener la línea "
 
 #### Comandos
 
-Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. El parámetro _argumentos_ se debe interpretar como una lista correspondiente a los argumentos ingresados al lanzar el comando. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
+Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. El parámetro _argumentos_ se debe interpretar como una lista correspondiente a los argumentos ingresados al lanzar el comando. Esta función puede devolver un resultado. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
 
 #### Programas
 
