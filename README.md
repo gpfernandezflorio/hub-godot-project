@@ -30,7 +30,7 @@ El código __SRC__ indica que el archivo es un script fuente del HUB. Cada tipo 
 
 También se pueden crear archivos con lotes de comandos para ejecutar. A diferencia de los dos anteriores, este tipo de archivo no es un script válido de GDScript, ya que cada línea contiene un comando del HUB y por lo tanto, no respeta la sintaxis de GDScript. Para que un archivo sea reconocido como un lote de comandos por el HUB, este debe estar ubicado en la carpeta __shell__ dentro de la _ruta_raiz_ y usar el código __SH__ en la segunda línea. Para poder ejecutar un lote de comandos desde la terminal se necesita el comando __sh__. Más adelante se verán otros tipos de archivos.
 
-## Entorno de manipulación de objetos
+### Entorno de manipulación de objetos
 
 Otra premisa del HUB es proveer al usuario una capa de abstracción orientada a objetos por encima del sistema de nodos de Godot. En esta capa, se manipulan objetos cuyo comportamiento viene dado por los componentes que lo componen y por los scripts que se le adjuntan. En Godot, cada nodo tiene un tipo (una clase) y un script asociado. El conjunto de funciones que puede ejecutar ese nodo es la unión entre las funciones de la clase a la que pertenece y las funciones definidas en el script.
 
@@ -44,15 +44,19 @@ Para crear un nuevo objeto se cuenta con la función del módulo de objetos del 
 
 Para que el objeto empiece a responder mensajes adecuadamente se le deben adjuntar scripts de comportamiento con la función __agregar_comportamiento(nombre_script)__. Los scripts de comportamiento son otro tipo de archivos del HUB sin ninguna otra particularidad que la de definir funciones. Un objeto sabrá responder un mensaje si alguno de sus scripts de comportamiento asociados implementa la función correspondiente. Para que un archivo sea reconocido como un script de comportamiento por el HUB, este debe estar ubicado en la carpeta __comportamiento__ dentro de la _ruta_raiz_ y usar el código __Comportamiento__ en la segunda línea.
 
-## Manejo de errores
+### Manejo de errores
 
 Godot no provee funcionalidad para manejar excepciones así que siempre que se esté modificando la funcionalidad del HUB debería ejecutarse desde el entorno de Godot y no utilizando el Core compilado. La forma de simular algo parecido al manejor de excepciones es a través de la clase __Error__ declarada en el módulo de errores del HUB. Las funciones pueden devolver una instancia de un error en caso de que fallen por alguna razón. La función que recibe un error puede decidir qué hacer con él. La clase error sólo contiene una variable con el mensaje de error y, eventualmente, una referencia a un error previo en caso de que el error haya sido generado por un error anterior.
 
 El módulo de errores define la función __error(mensaje, stack_error=null)__ que devuelve un error genérico con el mensaje pasado por parámetro. Otros módulos definen otros tipos de errores como funciones. Por ejemplo, el módulo de archivos define la función __archivo_inexistente(ruta, archivo, stack_error=null)__ que devuelve un error con el mensaje correspondiente, llamando a la función __error(mensaje, stack_error=null)__ del módulo de errores. De esta forma, se pueden crear nuevos tipos de errores. El módulo de errores también implementa la función __fallo(resultado)__ que determina si el resultado de un llamado a una función generó un error. Esta función puede utilizarse para verificar el resultado tras un llamado a una función que puede fallar.
 
-## Otros tipos de archivos
+### Testing
 
-### Programas
+El HUB también provee un módulo de testing para evaluar el correcto funcionamiento de otros scripts. La función principal de dicho módulo es __test(tester, verificador, mensajes_esperados=null)__ que toma como parámetros dos estructuras. La primera estructura representa el test a ejecutar. Debe definir la función __test()__, la cual será ejecutada por el módulo de testing y sobre cuyo resultado se espera realizar una verificación. Dicha verificación debe definirse a través de la estructura pasada como segundo parámetro. Esta estructura debe definir la función __verificar(resultado)__ y devolver un booleano indicando si el resultado pasado por parámetro hace que el test sea exitoso o fallido. Los verificadores también deben implementar la función __falla()__ que devuelva un mensaje indicando por qué no se cumplió la condición de verificación. Opcionalmente se le puede pasar como tercer parámetro una lista de mensajes para verificar que la ejecución del tester produzca dichos mensajes.
+
+### Otros tipos de archivos
+
+#### Programas
 
 Hasta ahora los comandos fueron sólo funciones que se ejecutan ininterrumpidamente de principio a fín. Pero el HUB permite también definir programas que se ejecuten como procesos en segundo plano. Esto no quiere decir que los procesos se ejecuten en paralelo. De hecho, tanto los comandos como los procesos se implementan como scripts adjuntos a nodos. La diferencia es que en el caso de los comandos, existe un único nodo para cada comando y cada vez que se quiere ejecutar dicho comando se llama a la función __comando(argumentos)__ de ese nodo. En el caso de los programas, cada vez que se crea un proceso, se crea un nuevo nodo al que se le adjunta el script correspondiente, por lo que podrían tenerse varias instancias de un mismo programa ejecutándose a la vez (nuevamente, esto no quiere decir que ejecuten en paralelo sino que ambos nodos están vivos a la vez e incluso pueden interactuar entre sí).
 
@@ -60,11 +64,13 @@ Para crear un proceso se debe llamar a la función __nuevo(programa, argumentos)
 
 Otra diferencia importante entre comandos y programas es que los programas pueden, a su vez, definir comandos. Esto significa que, tras lanzar un proceso, los comandos lanzados en la terminal pueden interpretarse tanto como comandos globales (los descriptos hasta ahora) o como comandos dentro del programa. Para definir un comando "X" en un programa sólo hay que declarar una función "__X(argumentos)" en el script del programa. Cuando el proceso esté en ejecución, al lanzar el comando "X" en la terminal, en lugar de ejecutar el script _X.gd_ se ejecutará la función "\_\_X" correspondiente en el script de dicho proceso (si es que esta está definida). Si el proceso en ejecución no tiene definido el comando ingresado, entonces se ejecuta el comando global. Para forzar al HUB a ejecutar el comando global aunque el proceso actual tenga definido el comando, se le debe anteponer el caracter "!".
 
-### Bibliotecas
+#### Bibliotecas
 
-### Comportamiento
+Como en cualquier lenguaje de programación, hay estructuras o funciones que son requeridas por muchos scripts y no tendría sentido definirlas en cada uno. Para eso existen las bibliotecas, manipuladas por el módulo de bibliotecas del HUB. Para que un archivo sea reconocido como un script de biblioteca por el HUB, este debe estar ubicado en la carpeta __bibliotecas__ dentro de la _ruta_raiz_ y usar el código __Biblioteca__ en la segunda línea. Utilizando el módulo de bibliotecas del HUB se puede obtener un nodo con el script correspondiente cargado y así utilizar todas las esctructuras y funciones que la biblioteca provee accediendo a los miembros de dicho nodo.
 
-### Objeto
+#### Comportamiento
+
+#### Objeto
 
 ## Módulos del HUB
 
@@ -88,7 +94,7 @@ También declara los siguientes errores:
 
 ### Eventos
 
-Este módulo controla el manejo de eventos. Todos los eventos del HUB pasan por este módulo. Si un nodo quiere manejar un evento debe registrarse usando las funciones que provee este módulo y proveerle al módulo una función del nodo que será la que maneje el evento. Luego, cuando el módulo recibe un evento, notifica a través de la función provista a todos aquellos que se hayan registrado para manejar tal evento. Las funciones que provee son las siguientes:
+Este módulo controla el manejo de eventos. Todos los eventos del HUB pasan por este módulo. Si un nodo quiere manejar un evento debe registrarse usando las funciones que provee este módulo y proveerle al módulo una función del nodo que será la que maneje el evento. Luego, cuando el módulo recibe un evento, notifica a través de la función provista a todos aquellos que se hayan registrado para manejar tal evento. Las funciones provistas por este módulo son las siguientes:
 * registrar_press(boton, nodo, funcion) : Registra al nodo _nodo_ para que al presionarse el boton _boton_ se llame a la función _funcion_. La función utilizada no debe tomar parámetros.
 * registrar_release(boton, nodo, funcion) : Registra al nodo _nodo_ para que al soltarse el boton _boton_ se llame a la función _funcion_. La función utilizada no debe tomar parámetros.
 * registrar_ventana_escalada(nodo, funcion) : Registra al nodo _nodo_ para que al modificarse el tamaño de la pantalla se llame a la función _funcion_. La función utilizada debe tomar un parámetro que será la nueva resolución de la ventana.
@@ -117,7 +123,7 @@ También declara los siguientes errores:
 ### Bibliotecas
 
 Este módulo administra las bibliotecas del HUB. Provee las siguientes funciones:
-* importar(biblioteca) : Devuelve el nodo correspondiente a la biblioteca solicitada. Devuelve _null_ si no se encuentra.
+* importar(biblioteca) : Devuelve el nodo correspondiente a la biblioteca solicitada. Devuelve un error si no se encuentra.
 
 También declara los siguientes errores:
 * biblioteca_inexistente(biblioteca, stack_error=null) : La biblioteca _biblioteca_ no se encuentra.
@@ -129,7 +135,7 @@ También declara los siguientes errores:
 
 ### Errores
 
-Este módulo provee funciones para verificar condiciones y manejar excepciones antes de que el HUB falle. También se define la clase __Error__ para devolver ante fallas. Las funciones provistas son las siguientes:
+Este módulo provee funciones para verificar condiciones y manejar excepciones antes de que el HUB falle. También se define la clase __Error__ para devolver ante fallas. Las funciones provistas por este módulo son las siguientes:
 * error(texto, stack_error=null) : Crea y devuelve un error genérico. Si se le pasa un segundo parámetro lo guarda como referencia al error previo.
 * fallo(resultado) : Retorna si el resultado de una función generó un error
 * try(nodo, funcion, parametros=[]) : Intenta ejecutar una función en un nodo. Si lo logra, devuelve el resultado de la ejecución. Si no, devuelve un error.
@@ -138,10 +144,39 @@ Este módulo provee funciones para verificar condiciones y manejar excepciones a
 También declara los siguientes errores:
 * funcion_no_implementada(nodo, funcion, parametros, stack_error=null) : El nodo _nodo_ no implementa la función _funcion_ con _parametros_ parametro(s).
 * try_fallo(nodo, funcion, stack_error=null) : Falló al intentar ejecutar la función _funcion_ en el nodo _nodo_.
+* inicializacion_fallo(nodo, stack_error=null) : Falló al intentar inicializar el nodo _nodo_.
 
 ### Procesos
 
+Este módulo administra los procesos activos. Cada proceso se compone de un identificador (_pid_) de tipo string y una secuencia de comandos. El seguimiento de dicha secuencia puede utilizarse para debuggear, ya que al enviar mensajes a la terminal se muestra la secuencia completa de comandos, junto al identificador del programa. Cuando los comandos son ejecutados por el usuario, no se muestra ningún identificador de proceso, aunque internamente se considera que el proceso actual es el mismo HUB, un proceso se crea desde el inicio y que no se puede finalizar. Es el proceso por defecto cuando no están corriendo otros procesos. Las funciones provistas por este módulo son las siguientes:
+* actual() : Devuelve el _pid_ del proceso actual.
+* nuevo(programa, argumentos) : Crea un nuevo proceso con el código del archivo _programa_ pasándole como argumentos la lista _argumentos_. Devuelve un error si no se encuentra.
+
+También declara los siguientes errores:
+* programa_inexistente(programa, stack_error=null) : El programa _programa_ no se encuentra.
+* programa_no_cargado(programa, stack_error=null) : El programa _programa_ no se pudo cargar.
+
 ### Testing
+
+Este módulo define todo lo referente a testing. Provee las siguientes funciones:
+* asegurar(condicion) : Verifica que se cumpla una condición. Genera un error si no es así.
+* test(tester, verificador, mensajes_esperados=null) : Ejecuta el test definido en _tester_ y verifica el resultado a través del verificador _verificador_. Si se le pasa como tercer parámetro una lista de mensajes, verifica también que los mensajes enviados por el tester coincidan con dicha lista. Retorna _null_ si el test fue exitoso. En caso contrario devuelve el error correspondiente.
+* test_genera_error(tester, error_esperado, mensaje_esperado=null) : Ejecuta el test definido en _tester_ y verifica que genere el error _error_esperado_. Si se le pasa como tercer parámetro una lista de mensajes, verifica también que los mensajes enviados por el tester coincidan con dicha lista. Retorna _null_ si el test fue exitoso (es decir, si el tester generó el error esperado). En caso contrario devuelve el error correspondiente.
+* resultado_comando(comando_ingresado, verificador, mensajes_esperados=null) : Ejecuta el comando _comando_ingresado_ y verifica el resultado a través del verificador _verificador_. Si se le pasa como tercer parámetro una lista de mensajes, verifica también que los mensajes enviados por el comando coincidan con dicha lista. Retorna _null_ si el test fue exitoso. En caso contrario devuelve el error correspondiente.
+* comando_fallido(comando_ingresado, error_esperado, mensaje_esperado=null) : Ejecuta el comando _comando_ingresado_ y verifica que genere el error _error_esperado_. Si se le pasa como tercer parámetro una lista de mensajes, verifica también que los mensajes enviados por el comando coincidan con dicha lista. Retorna _null_ si el test fue exitoso (es decir, si el comando generó el error esperado). En caso contrario devuelve el error correspondiente.
+
+También declara los siguientes testers:
+* tester_comando(comando_a_ejecutar) : Devuelve un tester que ejecuta el comando _comando_a_ejecutar_.
+
+También declara los siguientes verificadores:
+* verificador_trivial() : Devuelve un verificador que siempre devuelve _true_.
+* verificador_nulo() : Devuelve un verificador que se asegura que el resultado sea _null_.
+* verificador_error(error_esperado) : Devuelve un verificador que se asegura que el resultado sea un error de tipo _error_esperado_.
+
+También declara los siguientes errores:
+* condicion_fallida(stack_error = null) : La condición que se quería asegurar resultó ser falsa.
+* test_fallido_resultado(stack_error = null) : El test falló porque el resultado no cumplió la condición del verificador.
+* test_fallido_salida(stack_error = null) : El test falló porque los mensajes enviados no fueron los esperados.
 
 ## Objetos del HUB
 
@@ -151,7 +186,7 @@ En la carpeta __plantillas__ dentro de la _ruta_raiz_ hay plantillas base de cad
 
 ### Scripts
 
-Como los scripts deben ser scripts válidos de GDScript, deben tener la línea "extends Node" para que Godot pueda adjuntárselos a un nodo. Para ser scripts válidos del HUB, deben implementar la función __inicializar(hub)__, la cual será llamada con el HUB como parámetro cuando el script sea agragado a un nodo de Godot. No es obligatorio pero se recomienda mantener la variable _HUB_ (e inicializarla con el parámetro _hub_) para acceder al HUB y a todos sus módulos. Esta función debe devolver un booleano que indique si el script se inicializó correctamente. Si no fue así, se asume que el script que lo creó puede eliminar al nodo correspondiente ya que este quedó en un estado inconsistente.
+Como los scripts deben ser scripts válidos de GDScript, deben tener la línea "extends Node" para que Godot pueda adjuntárselos a un nodo. Para ser scripts válidos del HUB, deben implementar la función __inicializar(hub)__, la cual será llamada con el HUB como parámetro cuando el script sea agragado a un nodo de Godot. No es obligatorio pero se recomienda mantener la variable _HUB_ (e inicializarla con el parámetro _hub_) para acceder al HUB y a todos sus módulos. Esta función debería devolver _null_ a menos que se genere un error. En dicho caso, debería devolver el error generado y se asume que el script que lo creó puede eliminar al nodo correspondiente ya que este quedó en un estado inconsistente. En el caso de los scripts fuente, dado que el módulo de errores podría no haberse inicializado todavía, esta función devuelve un booleano que indica si el script se inicializó correctamente.
 
 #### Comandos
 
