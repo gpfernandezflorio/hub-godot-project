@@ -52,7 +52,7 @@ El módulo de errores define la función __error(mensaje, stack_error=null)__ qu
 
 ### Testing
 
-El HUB también provee un módulo de testing para evaluar el correcto funcionamiento de otros scripts. La función principal de dicho módulo es __test(tester, verificador, mensajes_esperados=null)__ que toma como parámetros dos estructuras. La primera estructura representa el test a ejecutar. Debe definir la función __test()__, la cual será ejecutada por el módulo de testing y sobre cuyo resultado se espera realizar una verificación. Dicha verificación debe definirse a través de la estructura pasada como segundo parámetro. Esta estructura debe definir la función __verificar(resultado)__ y devolver un booleano indicando si el resultado pasado por parámetro hace que el test sea exitoso o fallido. Los verificadores también deben implementar la función __falla()__ que devuelva un mensaje indicando por qué no se cumplió la condición de verificación. Opcionalmente se le puede pasar como tercer parámetro una lista de mensajes para verificar que la ejecución del tester produzca dichos mensajes.
+El HUB también provee un módulo de testing para evaluar el correcto funcionamiento de otros scripts. La función principal de dicho módulo es __test(tester, verificador, mensajes_esperados=null)__ que toma como parámetros dos estructuras. La primera estructura representa el test a ejecutar. Debe definir la función __test()__, la cual será ejecutada por el módulo de testing y sobre cuyo resultado se espera realizar una verificación. Dicha verificación debe definirse a través de la estructura pasada como segundo parámetro. Esta estructura debe definir la función __verificar(resultado)__ la cual debe devolver un string vacío si el resultado pasado por parámetro hace que el test sea exitoso y un mensaje de error (indicando por qué no se cumplió la condición de verificación) en caso contrario. Opcionalmente se le puede pasar como tercer parámetro una lista de mensajes para verificar que la ejecución del tester produzca dichos mensajes.
 
 ### Otros tipos de archivos
 
@@ -60,7 +60,7 @@ El HUB también provee un módulo de testing para evaluar el correcto funcionami
 
 Hasta ahora los comandos fueron sólo funciones que se ejecutan ininterrumpidamente de principio a fín. Pero el HUB permite también definir programas que se ejecuten como procesos en segundo plano. Esto no quiere decir que los procesos se ejecuten en paralelo. De hecho, tanto los comandos como los procesos se implementan como scripts adjuntos a nodos. La diferencia es que en el caso de los comandos, existe un único nodo para cada comando y cada vez que se quiere ejecutar dicho comando se llama a la función __comando(argumentos)__ de ese nodo. En el caso de los programas, cada vez que se crea un proceso, se crea un nuevo nodo al que se le adjunta el script correspondiente, por lo que podrían tenerse varias instancias de un mismo programa ejecutándose a la vez (nuevamente, esto no quiere decir que ejecuten en paralelo sino que ambos nodos están vivos a la vez e incluso pueden interactuar entre sí).
 
-Para crear un proceso se debe llamar a la función __nuevo(programa, argumentos)__ del módulo de procesos del HUB. El parámetro _programa_ debe ser un script de programa válido. Para que un archivo sea reconocido como un script de programa por el HUB, este debe estar ubicado en la carpeta __programas__ dentro de la _ruta_raiz_ y usar el código __Programa__ en la segunda línea. Además, los scripts de programas difieren al resto de los scripts en cuanto a que la función __inicializar__ además de tomar como parámetro el HUB, debe tomar como parámetro el número identificador de proceso y los argumentos. Notar que los procesos siguen vivos por defecto (incluso tras terminar de ejecutar la función de inicialización) y no finalizan hasta que llamen explícitamente a la función __finalizar(pid)__ del módulo de procesos del HUB (o hasta que el proceso sea terminado desde afuera).
+Para crear un proceso se debe llamar a la función __nuevo(programa, argumentos)__ del módulo de procesos del HUB. El parámetro _programa_ debe ser un script de programa válido. Para que un archivo sea reconocido como un script de programa por el HUB, este debe estar ubicado en la carpeta __programas__ dentro de la _ruta_raiz_ y usar el código __Programa__ en la segunda línea. Además, los scripts de programas difieren al resto de los scripts en cuanto a que la función __inicializar__ además de tomar como parámetro el HUB, debe tomar como parámetro el identificador de proceso y los argumentos. Notar que los procesos siguen vivos por defecto (incluso tras terminar de ejecutar la función de inicialización) y no finalizan hasta que llamen explícitamente a la función __finalizar(pid)__ del módulo de procesos del HUB (o hasta que el proceso sea terminado desde afuera).
 
 Otra diferencia importante entre comandos y programas es que los programas pueden, a su vez, definir comandos. Esto significa que, tras lanzar un proceso, los comandos lanzados en la terminal pueden interpretarse tanto como comandos globales (los descriptos hasta ahora) o como comandos dentro del programa. Para definir un comando "X" en un programa sólo hay que declarar una función "__X(argumentos)" en el script del programa. Cuando el proceso esté en ejecución, al lanzar el comando "X" en la terminal, en lugar de ejecutar el script _X.gd_ se ejecutará la función "\_\_X" correspondiente en el script de dicho proceso (si es que esta está definida). Si el proceso en ejecución no tiene definido el comando ingresado, entonces se ejecuta el comando global. Para forzar al HUB a ejecutar el comando global aunque el proceso actual tenga definido el comando, se le debe anteponer el caracter "!".
 
@@ -76,18 +76,23 @@ Como en cualquier lenguaje de programación, hay estructuras o funciones que son
 
 Cada módulo se implementa en un script, asociado a un nodo de Godot. El nodo raíz es el HUB, que tiene asociado el script __HUB.gd__. Este script crea un nodo por cada módulo del HUB, inserta ese nodo como hijo del nodo HUB y le asocia su script correspondiente (del mismo nombre). Todos los scripts que definen los módulos del HUB pueden verse en la carpeta __src__. Después de la etapa de inicialización, el nodo HUB sirve como punto de entrada para acceder a los distintos módulos. Es por esto que se toma como convención que todos los archivos que sean scripts mantengan una variable con una referencia al nodo HUB. Esta variable puede inicializarse cuando se ejecuta la función __inicializar(hub)__ del script en cuestión. El HUB provee las siguientes funciones:
 * mensaje(texto) : Envía un mensaje al HUB y lo muestra en la terminal.
-* error(error) : Notifica que se generó un error. Toma como parámetro el error generado y también lo devuelve. El error puede crearse con la función __error(mensaje, stack_error=null)__ del módulo de errores, aunque es recomendable encapsular ese llamado dentro de una función cuyo nombre indique el tipo de error generado.
+* error(error, emisor="") : Notifica que se generó un error. Toma como parámetro el error generado y también lo devuelve. El error puede crearse con la función __error(mensaje, stack_error=null)__ del módulo de errores, aunque es recomendable encapsular ese llamado dentro de una función cuyo nombre indique el tipo de error generado (ver ejemplos en los módulos que declaran errores).
 * salir() : Finaliza la ejecución.
 
 ### Archivos
 
 Este módulo se utiliza para acceder a los archivos dentro de la _ruta_raiz_. Provee las siguientes funciones:
-* abrir(ruta, nombre, tipo=null) : Carga el contenido de un archivo. Si se le pasa como tercer parámetro un código de tipo hace todas las verificaciones necesarias para que el archivo sea un archivo válido de ese tipp y devuelve un error si no cumple alguna de esas condiciones. También puede devolver un error si el archivo no existe.
-* leer(ruta, nombre) : Carga el contenido de un archivo y lo devuelve como texto. Devuelve un error si el archivo no existe.
-* existe(ruta, nombre) : Devuelve si existe el archivo solicitado.
+* abrir(ruta, nombre, tipo=null) : Carga el contenido del archivo _nombre_. Si se le pasa como tercer parámetro un código de tipo hace todas las verificaciones necesarias para que el archivo sea un archivo válido de ese tipo y devuelve un error si no cumple alguna de esas condiciones. También puede devolver un error si el archivo no existe.
+* leer(ruta, nombre) : Carga el contenido del archivo _nombre_ y lo devuelve como texto. Devuelve un error si el archivo no existe.
+* escribir(ruta, nombre, contenido, en_nueva_linea=true) : Escribe el texto _contenido_ al final del archivo _nombre_. Devuelve un error si el archivo no existe. Si se le pasa _false_ como cuarto parámetro, el nuevo texto se escribe inmediatamente a continuación del contenido existente en el archivo, es decir, sin un salto de línea antes.
+* sobrescribir(ruta, nombre, contenido) : Sobrescribe el contenido del archivo _archivo_ con el texto _contenido_. Devuelve un error si el archivo no existe.
+* existe(ruta, nombre) : Devuelve si existe el archivo _nombre_.
+* crear(ruta, nombre) : Crea un nuevo archivo vacío con el nombre _nombre_ en la carpeta _ruta_. Devuelve error si el archivo ya existe.
+* borrar(ruta, nombre) : Elimina el archivo _nombre_. Devuelve error si el archivo no existe.
 
 También declara los siguientes errores:
 * archivo_inexistente(ruta, archivo, stack_error=null) : El archivo _archivo_ no se encuentra en la ruta _ruta_.
+* archivo_ya_existe(ruta, archivo, stack_error=null) : El archivo _archivo_ no se puede crear porque ya existe.
 * archivo_invalido(archivo, tipo, stack_error=null) : El archivo _archivo_ no es un archivo válido de tipo _tipo_.
 * encabezado_invalido(archivo, stack_error=null) : El encabezado del archivo _archivo_ es inválido.
 * funciones_no_implementadas(archivo, tipo, stack_error=null) : El archivo _archivo_ no implementa las funciones necesarias para ser de tipo _tipo_.
@@ -150,7 +155,8 @@ También declara los siguientes errores:
 
 Este módulo administra los procesos activos. Cada proceso se compone de un identificador (_pid_) de tipo string y una secuencia de comandos. El seguimiento de dicha secuencia puede utilizarse para debuggear, ya que al enviar mensajes a la terminal se muestra la secuencia completa de comandos, junto al identificador del programa. Cuando los comandos son ejecutados por el usuario, no se muestra ningún identificador de proceso, aunque internamente se considera que el proceso actual es el mismo HUB, un proceso se crea desde el inicio y que no se puede finalizar. Es el proceso por defecto cuando no están corriendo otros procesos. Las funciones provistas por este módulo son las siguientes:
 * actual() : Devuelve el _pid_ del proceso actual.
-* nuevo(programa, argumentos) : Crea un nuevo proceso con el código del archivo _programa_ pasándole como argumentos la lista _argumentos_. Devuelve un error si no se encuentra.
+* nuevo(programa, argumentos=[]) : Crea un nuevo proceso con el código del archivo _programa_ pasándole como argumentos la lista _argumentos_. Devuelve un error si no se encuentra.
+* entorno() : Devuelve el entorno de ejecución (el proceso y la secuencia de comandos actual) en forma de string.
 
 También declara los siguientes errores:
 * programa_inexistente(programa, stack_error=null) : El programa _programa_ no se encuentra.
@@ -171,6 +177,7 @@ También declara los siguientes testers:
 También declara los siguientes verificadores:
 * verificador_trivial() : Devuelve un verificador que siempre devuelve _true_.
 * verificador_nulo() : Devuelve un verificador que se asegura que el resultado sea _null_.
+* verificador_por_igualdad(resultado_esperado) : Devuelve un verificador que se asegura que el resultado sea igual a _resultado_esperado_.
 * verificador_error(error_esperado) : Devuelve un verificador que se asegura que el resultado sea un error de tipo _error_esperado_.
 
 También declara los siguientes errores:
@@ -213,7 +220,7 @@ Los scripts se ejecutarán como scripts de GDScript dentro del entorno de Godot.
 * Al trabajar con objetos, recordar que un objeto no es equivalente a un nodo de Godot. Por lo tanto,
   * No crear ni destruir objetos con las funciones de nodos (__New()__, __free()__, etc). En su lugar, usar __HUB.objetos.crear()__, __HUB.objetos.borrar(objeto)__, etc.
   * no acceder ni modificar la jerarquía de objetos con las funciones de nodos de Godot (__get_node(path)__, __get_children()__, __add_child(node)__, etc). En su lugar, usar __HUB.objetos.localizar(nombre_completo)__, __hijos()__, __agregar_hijo(objeto)__, etc.
-* No utilizar la clase __File__ para acceder a archivos. En su lugar, usar __HUB.archivos.abrir(ruta, nombre)__, __HUB.archivos.leer(ruta, nombre)__, etc.
+* No utilizar las clases __File__ o __Directory__ para acceder a archivos. En su lugar, usar __HUB.archivos.abrir(ruta, nombre)__, __HUB.archivos.leer(ruta, nombre)__, etc.
 
 ## Instalación
 
