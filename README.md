@@ -26,7 +26,7 @@ Todos los archivos del HUB (a menos que se trate de archivos muy específicos, c
 ## SRC
 ```
 
-El código __SRC__ indica que el archivo es un script fuente del HUB. Cada tipo tiene un código asociado. En general esto es información para los usuarios y programadores pero ciertas partes del HUB asumen que esas dos líneas existen e incluso utiliazan la información allí suministrada, así que se recomienda seguir la convención. Otro tipo común de archivo es el tipo __Comando__. Los archivos de comandos definen funciones que serán ejecutadas cuando se ingrese su nombre en la terminal del HUB. Para que un script sea reconocido como un comando por el HUB, este debe estar ubicado en la carpeta __comandos__ dentro de la _ruta\_raiz_, usar el código __Comando__ en la segunda línea e implementar la función __comando(argumentos)__.
+El código __SRC__ indica que el archivo es un script fuente del HUB. Cada tipo tiene un código asociado. En general esto es información para los usuarios y programadores pero ciertas partes del HUB asumen que esas dos líneas existen e incluso utilizan la información allí suministrada, así que se recomienda seguir la convención. Otro tipo común de archivo es el tipo __Comando__. Los archivos de comandos definen funciones que serán ejecutadas cuando se ingrese su nombre en la terminal del HUB. Para que un archivo sea reconocido como un comando por el HUB, este debe estar ubicado en la carpeta __comandos__ dentro de la _ruta\_raiz_, usar el código __Comando__ en la segunda línea e implementar la función __comando(argumentos)__, la cual será llamada cuando el usuario ingrese el comando correspondiente en la terminal del HUB.
 
 También se pueden crear archivos con lotes de comandos para ejecutar. A diferencia de los dos anteriores, este tipo de archivo no es un script válido de GDScript, ya que cada línea contiene un comando del HUB y por lo tanto, no respeta la sintaxis de GDScript. Para que un archivo sea reconocido como un lote de comandos por el HUB, este debe estar ubicado en la carpeta __shell__ dentro de la _ruta_raiz_ y usar el código __SH__ en la segunda línea. Para poder ejecutar un lote de comandos desde la terminal se necesita el comando __sh__. Más adelante se verán otros tipos de archivos.
 
@@ -40,9 +40,27 @@ En el HUB, un objeto puede tener varios componentes y varios scripts asociados. 
 
 El principal objetivo de esta abstracción es desarrollar scripts de comportamiento lo más minimales posible para que sea fácil modificar los existentes y crear nuevos. Esto no puede lograrse en el entorno de Godot ya que para definir el comportamiento de un nodo, toda la funcionalidad deseada debe estar implementada en un mismo script. Al igual que en el caso de los nodos de Godot, los objetos se organizan en una jerarquía tipo árbol. Al iniciar el HUB existe un único objeto (raíz de la jerarquía de objetos) llamado _Mundo_.
 
-Para crear un nuevo objeto se cuenta con la función del módulo de objetos del HUB __crear()__. Por defecto, el nuevo objeto se crea vacío y como hijo directo del _Mundo_ en la jerarquía. Un objeto vacío puede responder a cualquier mensaje, aunque como en el paradigma orientado a objetos, a la mayoría de los mensajes responderá que no entiende el mensaje recibido (_MessageNotUnderstood_).
+Para crear un nuevo objeto se cuenta con la función del módulo de objetos del HUB __crear(hijo_de=HUB.nodo_usuario.mundo)__. Por defecto, el nuevo objeto se crea vacío y como hijo directo del _Mundo_ en la jerarquía. Un objeto vacío puede responder a cualquier mensaje, aunque como en el paradigma orientado a objetos, a la mayoría de los mensajes responderá que no entiende el mensaje recibido (_MessageNotUnderstood_).
 
 Para que el objeto empiece a responder mensajes adecuadamente se le deben adjuntar scripts de comportamiento con la función __agregar_comportamiento(nombre_script)__. Los scripts de comportamiento son otro tipo de archivos del HUB sin ninguna otra particularidad que la de definir funciones. Un objeto sabrá responder un mensaje si alguno de sus scripts de comportamiento asociados implementa la función correspondiente. Para que un archivo sea reconocido como un script de comportamiento por el HUB, este debe estar ubicado en la carpeta __comportamiento__ dentro de la _ruta_raiz_ y usar el código __Comportamiento__ en la segunda línea.
+
+### Objetos del HUB
+
+### Programas
+
+Hasta ahora los comandos fueron sólo funciones que se ejecutan ininterrumpidamente de principio a fín. Pero el HUB permite también definir programas que se ejecuten como procesos en segundo plano. Esto no quiere decir que los procesos se ejecuten en paralelo. De hecho, tanto los comandos como los procesos se implementan como scripts adjuntos a nodos. La diferencia es que en el caso de los comandos, existe un único nodo para cada comando y cada vez que se quiere ejecutar dicho comando se llama a la función __comando(argumentos)__ de ese nodo. En el caso de los programas, cada vez que se crea un proceso, se crea un nuevo nodo al que se le adjunta el script correspondiente, por lo que podrían tenerse varias instancias de un mismo programa ejecutándose a la vez (nuevamente, esto no quiere decir que ejecuten en paralelo sino que ambos nodos están vivos a la vez e incluso pueden interactuar entre sí).
+
+Para crear un proceso se debe llamar a la función __nuevo(programa, argumentos)__ del módulo de procesos del HUB. El parámetro _programa_ debe ser un script de programa válido. Para que un archivo sea reconocido como un script de programa por el HUB, este debe estar ubicado en la carpeta __programas__ dentro de la _ruta_raiz_, implementar la función __finalizar()__ y usar el código __Programa__ en la segunda línea. Además, los scripts de programas difieren al resto de los scripts en cuanto a que la función __inicializar__ además de tomar como parámetro el HUB, debe tomar como parámetro el identificador de proceso y los argumentos. Notar que los procesos siguen vivos por defecto (incluso tras terminar de ejecutar la función de inicialización) y no finalizan hasta que llamen explícitamente a la función __finalizar(pid)__ del módulo de procesos del HUB (o hasta que el proceso sea terminado desde afuera). La función __finalizar(pid)__ del módulo de procesos a su vez llama a la función __finalizar__ del programa, así que no es necesario que un programa llame a su función de finalización si está a punto de finalizar. Sólo debe llamar a la función __finalizar(pid)__ del módulo de procesos.
+
+Otra diferencia importante entre comandos y programas es que los programas pueden, a su vez, definir comandos. Esto significa que, tras lanzar un proceso, los comandos lanzados en la terminal pueden interpretarse tanto como comandos globales (los descriptos hasta ahora) o como comandos dentro del programa. Para definir un comando "X" en un programa sólo hay que declarar una función "__X(argumentos)" en el script del programa. Cuando el proceso esté en ejecución, al lanzar el comando "X" en la terminal, en lugar de ejecutar el script _X.gd_ se ejecutará la función "\_\_X" correspondiente en el script de dicho proceso (si es que esta está definida). Si el proceso en ejecución no tiene definido el comando ingresado, entonces se ejecuta el comando global. Para forzar al HUB a ejecutar el comando global aunque el proceso actual tenga definido un comando con el mismo nombre, se le debe anteponer el caracter "!".
+
+### Entornos
+
+Cada script que se ejecuta en el HUB se ejecuta dentro de un entorno. Un entorno se define con un identificador de proceso (_pid_), de tipo string y una secuencia de comandos. El proceso por defecto es el HUB, un proceso se crea desde el inicio y que no se puede finalizar y cuyo identificador es "HUB". Cuando no hay ningún proceso en ejecución, este es el proceso actual. Los comandos ejecutados por el usuario desde la terminal del HUB se ejecutan en el entorno correspondiente al proceso por defecto, a menos que el comando ingresado no sea un comando global sino un comando correspondiente al proceso actual. Luego de ejecutar un comando, al entorno se le agrega el comando ejecutado. Si este comando lanza otros comandos, cada uno de estos se va agregando al entorno de ejecución actual. Si se activa la opción correspondiente de la terminal, cada mensaje enviado muestra primero el entorno en el que se envió dicho mensaje. Como el "HUB" es el proceso por defecto, cuando el entorno incluye a este proceso sólo se muestra la secuencia de comandos.
+
+### Bibliotecas
+
+Como en cualquier lenguaje de programación, hay estructuras o funciones que son requeridas por muchos scripts y no tendría sentido definirlas en cada uno. Para eso existen las bibliotecas, manipuladas por el módulo de bibliotecas del HUB. Para que un archivo sea reconocido como un script de biblioteca por el HUB, este debe estar ubicado en la carpeta __bibliotecas__ dentro de la _ruta_raiz_ y usar el código __Biblioteca__ en la segunda línea. Utilizando la función __importar(biblioteca)__ del módulo de bibliotecas del HUB se puede obtener un nodo que tenga adjunto el script correspondiente a la biblioteca pasada por parámetro. De esta forma, se pueden utilizar todas las esctructuras y funciones que la biblioteca provee accediendo a los miembros de dicho nodo.
 
 ### Manejo de errores
 
@@ -54,30 +72,12 @@ El módulo de errores define la función __error(mensaje, stack_error=null)__ qu
 
 El HUB también provee un módulo de testing para evaluar el correcto funcionamiento de otros scripts. La función principal de dicho módulo es __test(tester, verificador, mensajes_esperados=null)__ que toma como parámetros dos estructuras. La primera estructura representa el test a ejecutar. Debe definir la función __test()__, la cual será ejecutada por el módulo de testing y sobre cuyo resultado se espera realizar una verificación. Dicha verificación debe definirse a través de la estructura pasada como segundo parámetro. Esta estructura debe definir la función __verificar(resultado)__ la cual debe devolver un string vacío si el resultado pasado por parámetro hace que el test sea exitoso y un mensaje de error (indicando por qué no se cumplió la condición de verificación) en caso contrario. Opcionalmente se le puede pasar como tercer parámetro una lista de mensajes para verificar que la ejecución del tester produzca dichos mensajes.
 
-### Otros tipos de archivos
-
-#### Programas
-
-Hasta ahora los comandos fueron sólo funciones que se ejecutan ininterrumpidamente de principio a fín. Pero el HUB permite también definir programas que se ejecuten como procesos en segundo plano. Esto no quiere decir que los procesos se ejecuten en paralelo. De hecho, tanto los comandos como los procesos se implementan como scripts adjuntos a nodos. La diferencia es que en el caso de los comandos, existe un único nodo para cada comando y cada vez que se quiere ejecutar dicho comando se llama a la función __comando(argumentos)__ de ese nodo. En el caso de los programas, cada vez que se crea un proceso, se crea un nuevo nodo al que se le adjunta el script correspondiente, por lo que podrían tenerse varias instancias de un mismo programa ejecutándose a la vez (nuevamente, esto no quiere decir que ejecuten en paralelo sino que ambos nodos están vivos a la vez e incluso pueden interactuar entre sí).
-
-Para crear un proceso se debe llamar a la función __nuevo(programa, argumentos)__ del módulo de procesos del HUB. El parámetro _programa_ debe ser un script de programa válido. Para que un archivo sea reconocido como un script de programa por el HUB, este debe estar ubicado en la carpeta __programas__ dentro de la _ruta_raiz_ y usar el código __Programa__ en la segunda línea. Además, los scripts de programas difieren al resto de los scripts en cuanto a que la función __inicializar__ además de tomar como parámetro el HUB, debe tomar como parámetro el identificador de proceso y los argumentos. Notar que los procesos siguen vivos por defecto (incluso tras terminar de ejecutar la función de inicialización) y no finalizan hasta que llamen explícitamente a la función __finalizar(pid)__ del módulo de procesos del HUB (o hasta que el proceso sea terminado desde afuera).
-
-Otra diferencia importante entre comandos y programas es que los programas pueden, a su vez, definir comandos. Esto significa que, tras lanzar un proceso, los comandos lanzados en la terminal pueden interpretarse tanto como comandos globales (los descriptos hasta ahora) o como comandos dentro del programa. Para definir un comando "X" en un programa sólo hay que declarar una función "__X(argumentos)" en el script del programa. Cuando el proceso esté en ejecución, al lanzar el comando "X" en la terminal, en lugar de ejecutar el script _X.gd_ se ejecutará la función "\_\_X" correspondiente en el script de dicho proceso (si es que esta está definida). Si el proceso en ejecución no tiene definido el comando ingresado, entonces se ejecuta el comando global. Para forzar al HUB a ejecutar el comando global aunque el proceso actual tenga definido el comando, se le debe anteponer el caracter "!".
-
-#### Bibliotecas
-
-Como en cualquier lenguaje de programación, hay estructuras o funciones que son requeridas por muchos scripts y no tendría sentido definirlas en cada uno. Para eso existen las bibliotecas, manipuladas por el módulo de bibliotecas del HUB. Para que un archivo sea reconocido como un script de biblioteca por el HUB, este debe estar ubicado en la carpeta __bibliotecas__ dentro de la _ruta_raiz_ y usar el código __Biblioteca__ en la segunda línea. Utilizando el módulo de bibliotecas del HUB se puede obtener un nodo con el script correspondiente cargado y así utilizar todas las esctructuras y funciones que la biblioteca provee accediendo a los miembros de dicho nodo.
-
-#### Comportamiento
-
-#### Objeto
-
 ## Módulos del HUB
 
 Cada módulo se implementa en un script, asociado a un nodo de Godot. El nodo raíz es el HUB, que tiene asociado el script __HUB.gd__. Este script crea un nodo por cada módulo del HUB, inserta ese nodo como hijo del nodo HUB y le asocia su script correspondiente (del mismo nombre). Todos los scripts que definen los módulos del HUB pueden verse en la carpeta __src__. Después de la etapa de inicialización, el nodo HUB sirve como punto de entrada para acceder a los distintos módulos. Es por esto que se toma como convención que todos los archivos que sean scripts mantengan una variable con una referencia al nodo HUB. Esta variable puede inicializarse cuando se ejecuta la función __inicializar(hub)__ del script en cuestión. El HUB provee las siguientes funciones:
 * mensaje(texto) : Envía un mensaje al HUB y lo muestra en la terminal.
 * error(error, emisor="") : Notifica que se generó un error. Toma como parámetro el error generado y también lo devuelve. El error puede crearse con la función __error(mensaje, stack_error=null)__ del módulo de errores, aunque es recomendable encapsular ese llamado dentro de una función cuyo nombre indique el tipo de error generado (ver ejemplos en los módulos que declaran errores).
-* salir() : Finaliza la ejecución.
+* salir() : Finaliza la ejecución del HUB.
 
 ### Archivos
 
@@ -87,15 +87,23 @@ Este módulo se utiliza para acceder a los archivos dentro de la _ruta_raiz_. Pr
 * escribir(ruta, nombre, contenido, en_nueva_linea=true) : Escribe el texto _contenido_ al final del archivo _nombre_. Devuelve un error si el archivo no existe. Si se le pasa _false_ como cuarto parámetro, el nuevo texto se escribe inmediatamente a continuación del contenido existente en el archivo, es decir, sin un salto de línea antes.
 * sobrescribir(ruta, nombre, contenido) : Sobrescribe el contenido del archivo _archivo_ con el texto _contenido_. Devuelve un error si el archivo no existe.
 * existe(ruta, nombre) : Devuelve si existe el archivo _nombre_.
+* es_archivo(ruta, nombre) : Devuelve si el archivo _nombre_ es efectivamente un archivo (es decir, no un directorio). Devuelve un error si el archivo no existe.
+* es_directorio(ruta, nombre) : Devuelve si el archivo _nombre_ es en realidad un directorio. Devuelve un error si el archivo no existe.
 * crear(ruta, nombre) : Crea un nuevo archivo vacío con el nombre _nombre_ en la carpeta _ruta_. Devuelve error si el archivo ya existe.
-* borrar(ruta, nombre) : Elimina el archivo _nombre_. Devuelve error si el archivo no existe.
+* crear_directorio(ruta, nombre) : Crea un nuevo directorio con el nombre _nombre_ en la carpeta _ruta_. Devuelve error si el directorio ya existe.
+* borrar(ruta, nombre) : Elimina el archivo _nombre_. Devuelve error si el archivo no existe. Si es una carpeta, elimina también todo su contenido recursivamente.
+* listar(ruta, carpeta) : Devuelve una lista con los nombres de todos los archivos contenidos en la carpeta _ruta_. Devuelve un error si la carpeta no existe o si no es un directorio.
 
 También declara los siguientes errores:
 * archivo_inexistente(ruta, archivo, stack_error=null) : El archivo _archivo_ no se encuentra en la ruta _ruta_.
 * archivo_ya_existe(ruta, archivo, stack_error=null) : El archivo _archivo_ no se puede crear porque ya existe.
 * archivo_invalido(archivo, tipo, stack_error=null) : El archivo _archivo_ no es un archivo válido de tipo _tipo_.
-* encabezado_invalido(archivo, stack_error=null) : El encabezado del archivo _archivo_ es inválido.
+* encabezado_faltante(archivo, stack_error=null) : El archivo _archivo_ no contiene encabezado.
+* encabezado_invalido_nombre(archivo, nombre, stack_error=null) : El encabezado del archivo _archivo_ no contiene el nombre del archivo.
+* encabezado_invalido_tipo(archivo, tipo, stack_error=null) : El encabezado del archivo _archivo_ no contiene el tipo de archivo.
+* encabezado_invalido_objeto(archivo, stack_error=null) : El encabezado del archivo _archivo_ no contiene el tipo de objeto.
 * funciones_no_implementadas(archivo, tipo, stack_error=null) : El archivo _archivo_ no implementa las funciones necesarias para ser de tipo _tipo_.
+* no_es_un_directorio(ruta, archivo, stack_error=null) : El archivo _archivo_ en la ruta _ruta_ no es una carpeta.
 
 ### Eventos
 
@@ -136,7 +144,22 @@ También declara los siguientes errores:
 
 ### Terminal
 
+Este módulo implementa todo lo relacionado a la terminal del HUB. Tiene 3 submódulos. El campo de entrada para ingresar texto, El campo de mensajes que muestra la salida de la ejecución de los scripts y el nodo de comandos. Este último es el que administra los comandos cargados. Cuando se presiona la tecla Enter en el campo de entrada, el nodo de comandos busca el archivo correspondiente al comando ingresado. La terminal se puede cerrar presionando la tecla Escape o enviando un mensaje vacío (presionando la tecla Enter con el campo de entrada vacío). Cuando está cerrada, puede abrirse presionando la tecla Tab. Además de los mensajes que se muestran en el campo de mensajes, el módulo de la terminal almacena un historial completo de los mensajes enviados desde que comenzó la ejecución, incluso si estos son eliminados del campo de mensajes visibles. El campo de entrada permite autocompletar con Tab y acceder al historial con las flechas hacia arriba y abajo. Las funciones provistas por este módulo son las siguientes:
+* abrir() : Abre la terminal
+* cerrar() : Cierra la terminal
+* ejecutar(comando_con_argumentos, mostrar_mensaje=false) : Intenta ejecutar la línea _comando\_con\_argumentos_. Devuelve un error si el comando no existe. Si se le pasa _true_ como segundo parámetro, también envía el comando como un mensaje al HUB y lo muestra en el campo de mensajes.
+* borrar_mensajes() : Limpia el campo de mensajes. Los mensajes dejan de ser visibles pero se almacenan en el historial oculto.
+* log_completo(restaurar=false) : Devuelve el historial completo de mensajes. Si se le pasa _true_ como parámetro también restaura todos los mensajes del historial y los vuelve a mostrar en el campo de mensajes.
+* imprimir_entorno(activado=true) : Activa o desactiva la función de imprimir el entorno. Cuando se habilita esta opción, cada vez que se envía un mensaje al HUB, se antepone el entorno desde el cual se envió dicho mensaje.
+
+También declara los siguientes errores:
+* comando_inexistente(comando, stack_error=null) : El comando _comando_ no existe en el HUB.
+* comando_no_cargado(comando, stack_error=null) : El comando _comando_ no se pudo cargar.
+* func comando_fallido(comando, stack_error=null) : Falló la ejecución del comando _comando_.
+
 ### Nodo Usuario
+
+Este módulo no provee ninguna funcionalidad. Sólo es el nodo raíz para todo lo creado por el usuario. Tiene dos nodos hijos. Uno es la GUI de tipo Control para crear interfaces gráficas de usuario. El otro es el objeto Mundo, raíz de la jerarquía de objetos del HUB.
 
 ### Errores
 
@@ -153,14 +176,17 @@ También declara los siguientes errores:
 
 ### Procesos
 
-Este módulo administra los procesos activos. Cada proceso se compone de un identificador (_pid_) de tipo string y una secuencia de comandos. El seguimiento de dicha secuencia puede utilizarse para debuggear, ya que al enviar mensajes a la terminal se muestra la secuencia completa de comandos, junto al identificador del programa. Cuando los comandos son ejecutados por el usuario, no se muestra ningún identificador de proceso, aunque internamente se considera que el proceso actual es el mismo HUB, un proceso se crea desde el inicio y que no se puede finalizar. Es el proceso por defecto cuando no están corriendo otros procesos. Las funciones provistas por este módulo son las siguientes:
-* actual() : Devuelve el _pid_ del proceso actual.
+Este módulo administra los procesos activos. Provee las siguientes funciones:
+* actual() : Devuelve el identificador (_pid_) del proceso actual.
 * nuevo(programa, argumentos=[]) : Crea un nuevo proceso con el código del archivo _programa_ pasándole como argumentos la lista _argumentos_. Devuelve un error si no se encuentra.
-* entorno() : Devuelve el entorno de ejecución (el proceso y la secuencia de comandos actual) en forma de string.
+* todos() : Devuelve la lista de procesos activos.
+* entorno(pid=null) : Devuelve el entorno de ejecución (el identificador de proceso y la secuencia de comandos actual) del proceso _pid_ en forma de string. Si se le pasa como parámetro _null_, devuelve el entorno del proceso actual.
+* finalizar(pid=null) : Finaliza el proceso _pid_. Si se le pasa como parámetro _null_, finaliza al proceso actual.
 
 También declara los siguientes errores:
 * programa_inexistente(programa, stack_error=null) : El programa _programa_ no se encuentra.
 * programa_no_cargado(programa, stack_error=null) : El programa _programa_ no se pudo cargar.
+* pid_inexistente(pid, stack_error=null) : No hay ningún proceso con identificador _pid_.
 
 ### Testing
 
@@ -181,11 +207,9 @@ También declara los siguientes verificadores:
 * verificador_error(error_esperado) : Devuelve un verificador que se asegura que el resultado sea un error de tipo _error_esperado_.
 
 También declara los siguientes errores:
-* condicion_fallida(stack_error = null) : La condición que se quería asegurar resultó ser falsa.
-* test_fallido_resultado(stack_error = null) : El test falló porque el resultado no cumplió la condición del verificador.
-* test_fallido_salida(stack_error = null) : El test falló porque los mensajes enviados no fueron los esperados.
-
-## Objetos del HUB
+* condicion_fallida(stack_error=null) : La condición que se quería asegurar resultó ser falsa.
+* test_fallido_resultado(stack_error=null) : El test falló porque el resultado no cumplió la condición del verificador.
+* test_fallido_salida(stack_error=null) : El test falló porque los mensajes enviados no fueron los esperados.
 
 ## Creando nuevos archivos para el HUB
 
@@ -197,11 +221,11 @@ Como los scripts deben ser scripts válidos de GDScript, deben tener la línea "
 
 #### Comandos
 
-Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. El parámetro _argumentos_ se debe interpretar como una lista correspondiente a los argumentos ingresados al lanzar el comando. Esta función puede devolver un resultado. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
+Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. El parámetro _argumentos_ se debe interpretar como una lista correspondiente a los argumentos ingresados al lanzar el comando. Esta función puede devolver un resultado para ser entregado al script que solicitó la ejecución del comando. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
 
 #### Programas
 
-Para ser un programa válido, debe implementar la función __inicializar(hub, pid, argumentos)__ en lugar de __inicializar(hub)__. El código para archivos de programas es __Programa__.
+Para ser un programa válido, debe implementar la función __inicializar(hub, pid, argumentos)__ en lugar de __inicializar(hub)__. También debe implementar la función __finalizar()__ que será llamada por el módulo de procesos cuando el proceso sea terminado. El programa no debería llamar a su propia función de finalización, ya que esta será llamada por el módulo de procesos cuando se invoque a la función __finalizar(pid)__ de dicho módulo. La función __finalizar()__ de un programa debería encargarse de eliminar todos los nodos, datos y objetos creados por dicho programa, así como cancelar las suscripciones a eventos correspondientes. Por defecto, el HUB no hace nada de eso automáticamente. El código para archivos de programas es __Programa__.
 
 #### Bibliotecas
 
@@ -209,14 +233,14 @@ Las bibliotecas no tienen restricciones adicionales. El código para archivos de
 
 ### Lotes de comandos
 
-Los lotes de comandos no tienen restricciones adicionales. El código para archivos de lotes de comandos es __SH__. Si el HUB tiene el comando __sh__ y el lote de comandos __INI.gd__, tras haberse inicializado ejecutará "sh INI.gd" en la terminal.
+Los lotes de comandos no tienen restricciones adicionales. Cada línea debería ser un comando válido aunque eso no se verifica hasta que cada línea se intenta ejecutar. El código para archivos de lotes de comandos es __SH__. Si el HUB tiene el comando __sh__ y el lote de comandos __INI.gd__ en la carpeta __shell__, tras haberse inicializado ejecutará "sh INI.gd" en la terminal.
 
 ### Consideraciones a la hora de escribir un script para el HUB
 
 Los scripts se ejecutarán como scripts de GDScript dentro del entorno de Godot. Esto significa que se pueden utilizar todas las herramientas provistas por el motor de Godot. Sin embargo, los módulos del HUB también hacen uso de estas herramientas y podrían entrar en conflicto con ellos. Por eso se recomienda en cambio utlizar las abstracciones del HUB para acceder a las herramientas de Godot. Algunos ejemplos:
 * No utilizar la funciones __\_ready()__ o __\_init()__. Para todo lo que sea inicialización de una sóla vez, usar la función __inicializar(hub)__. Esta es llamada luego de que el nodo es agregado al árbol de nodos de Godot.
-* No utilizar las funciones __\_process(delta)__ o __\_fixed_process(delta)__. En su lugar, suscribirse los eventos temporales con __HUB.input.registrar_tiempo(nodo, funcion)__.
-* No utilizar las funciones __\_input(event)__ o __\_input_event(event)__. En su lugar, suscribirse los eventos de input con __HUB.input.registrar_press(boton, nodo, funcion)__, __HUB.input.registrar_release(boton, nodo, funcion)__, etc.
+* No utilizar las funciones __\_process(delta)__ o __\_fixed_process(delta)__. En su lugar, suscribirse a los eventos temporales con __HUB.input.registrar_tiempo(nodo, funcion)__.
+* No utilizar las funciones __\_input(event)__ o __\_input_event(event)__. En su lugar, suscribirse a los eventos de input con __HUB.input.registrar_press(boton, nodo, funcion)__, __HUB.input.registrar_release(boton, nodo, funcion)__, etc.
 * Al trabajar con objetos, recordar que un objeto no es equivalente a un nodo de Godot. Por lo tanto,
   * No crear ni destruir objetos con las funciones de nodos (__New()__, __free()__, etc). En su lugar, usar __HUB.objetos.crear()__, __HUB.objetos.borrar(objeto)__, etc.
   * no acceder ni modificar la jerarquía de objetos con las funciones de nodos de Godot (__get_node(path)__, __get_children()__, __add_child(node)__, etc). En su lugar, usar __HUB.objetos.localizar(nombre_completo)__, __hijos()__, __agregar_hijo(objeto)__, etc.
