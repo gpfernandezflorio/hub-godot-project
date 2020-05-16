@@ -70,7 +70,7 @@ El módulo de errores define la función __error(mensaje, stack_error=null)__ qu
 
 ### Testing
 
-El HUB también provee un módulo de testing para evaluar el correcto funcionamiento de otros scripts. La función principal de dicho módulo es __test(tester, verificador, mensajes_esperados=null)__ que toma como parámetros dos estructuras. La primera estructura representa el test a ejecutar. Debe definir la función __test()__, la cual será ejecutada por el módulo de testing y sobre cuyo resultado se espera realizar una verificación. Dicha verificación debe definirse a través de la estructura pasada como segundo parámetro. Esta estructura debe definir la función __verificar(resultado)__ la cual debe devolver un string vacío si el resultado pasado por parámetro hace que el test sea exitoso y un mensaje de error (indicando por qué no se cumplió la condición de verificación) en caso contrario. Opcionalmente se le puede pasar como tercer parámetro una lista de mensajes para verificar que la ejecución del tester produzca dichos mensajes.
+El HUB también provee un módulo de testing para evaluar el correcto funcionamiento de otros scripts. La función principal de dicho módulo es __test(tester, verificador, mensajes_esperados=null)__ que toma como parámetros dos estructuras. La primera estructura representa el test a ejecutar. Debe definir la función __test()__, la cual será ejecutada por el módulo de testing y sobre cuyo resultado se espera realizar una verificación. Dicha verificación debe definirse a través de la estructura pasada como segundo parámetro. Esta estructura debe definir la función __verificar(resultado)__ la cual debe devolver un string vacío si el resultado pasado por parámetro hace que el test sea exitoso y un mensaje de error (indicando por qué no se cumplió la condición de verificación) en caso contrario. Opcionalmente se le puede pasar como tercer parámetro una lista de mensajes para verificar que la ejecución del tester produzca dichos mensajes. Opcionalmente, el verificador puede implementar la función __verificar_error__ en caso de que se quiera verificar algo cuando se produce un error (por defecto, si se produce un error, el verificador no se ejecuta).
 
 ## Módulos del HUB
 
@@ -129,6 +129,7 @@ Este módulo controla todo lo relacionado con la pantalla. Mantiene la variable 
 Este módulo manipula los objetos del HUB. Provee las siguientes funciones:
 * crear(hijo_de=HUB.nodo_usuario.mundo) : Crea un nuevo objeto vacío como hijo de _hijo\_de_ en la jerarquía de objetos. Si no se le pasa ningún parámetro, lo crea como hijo del objeto Mundo. Si se le pasa como parámetro _null_, no lo agrega a la jerarquía de objetos.
 * localizar(nombre_completo, desde=HUB.nodo_usuario.mundo) : Ubica a un objeto por su nombre completo. Es decir, si se tiene un objeto _Mano_ hijo de otro objeto que se llama _Brazo_, para ubicar al objeto _Mano_ como parámtro nombre_completo se le debe pasar el texto "Brazo/Mano". Una alternativa es, si ya se tiene al objeto Brazo, pasarlo como parámetro _desde_ para empezar a buscar a partir de él en la jerarquía de objetos. Luego, como parámetro nombre_completo se le debe pasar sólo "Mano". Notar que en el primer caso, no es necesario anteponer el nombre del Mundo ya que por defecto, es a partir de ese objeto que se empieza a buscar. Devuelve un error si no encuentra al objeto solicitado.
+* borrar(nombre_completo, desde=HUB.nodo_usuario.mundo) : Borra el objeto ubicado por su nombre completo. Devuelve un error si no encuentra al objeto solicitado.
 
 También declara los siguientes errores:
 * objeto_inexistente(nombre_completo, desde, stack_error=null) : No se encontró ningún objeto con nombre _nombre\_completo_ en la jerarquía desde el objeto _desde_.
@@ -173,6 +174,7 @@ También declara los siguientes errores:
 * funcion_no_implementada(nodo, funcion, parametros, stack_error=null) : El nodo _nodo_ no implementa la función _funcion_ con _parametros_ parametro(s).
 * try_fallo(nodo, funcion, stack_error=null) : Falló al intentar ejecutar la función _funcion_ en el nodo _nodo_.
 * inicializacion_fallo(nodo, stack_error=null) : Falló al intentar inicializar el nodo _nodo_.
+* argumento_invalido(argumento, stack_error=null) : El argumento ingresado al comando es inválido.
 
 ### Procesos
 
@@ -210,6 +212,7 @@ También declara los siguientes errores:
 * condicion_fallida(stack_error=null) : La condición que se quería asegurar resultó ser falsa.
 * test_fallido_resultado(stack_error=null) : El test falló porque el resultado no cumplió la condición del verificador.
 * test_fallido_salida(stack_error=null) : El test falló porque los mensajes enviados no fueron los esperados.
+* test_fallido_error(stack_error=null) : El test generó un error inesperado.
 
 ## Creando nuevos archivos para el HUB
 
