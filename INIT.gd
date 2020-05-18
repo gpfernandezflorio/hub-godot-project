@@ -1,6 +1,6 @@
 extends Node
 
-var ruta_raiz = Globals.get("ruta_raiz")
+var ruta_raiz = "res://REPO-hub-local-files/"
 
 var instrucciones = \
 	'\n\nLea detenidamente las instrucciones de instalación en ' + \
@@ -8,7 +8,11 @@ var instrucciones = \
 	'y vuelva a intentarlo.\n\nPresione cuaquier tecla para salir.'
 
 func _ready():
+	if Globals.get("userfs"):
+		ruta_raiz = OS.get_data_dir() + "/"
 	var ruta_al_HUB = ruta_raiz + "src/HUB.gd"
+	if not (Globals.get("userfs") or OS.is_debug_build()):
+		ruta_al_HUB += "c"
 	if File.new().file_exists(ruta_al_HUB):
 		var HUB = Node.new()
 		HUB.set_name("HUB")
