@@ -234,6 +234,22 @@ Para ser un programa válido, debe implementar la función __inicializar(hub, pi
 
 Las bibliotecas no tienen restricciones adicionales. El código para archivos de bibliotecas es __Biblioteca__.
 
+### Objetos
+
+Los scripts de objetos pueden ser de varios tipos. Como todos los archivos del HUB tienen la extensión __.gd__ la forma de diferenciarlos es a través de la tercera línea del encabezado. El código para los archivos de objetos es __Objeto__.
+
+#### Objetos en HUB3DLang
+
+Una forma de definir objetos es a través del lenguaje de generación de objetos HUB3DLang. El código para los archivos que definen objetos de esta forma es __HUB3DLang__. Al estar escrito en dicho lenguaje, los scripts de este tipo no pueden implementar funciones (ni siquiera __inicializar__) ni variables (ni siquiera __HUB__).
+
+#### Objetos como funciones
+
+Los objetos también se pueden definir con funciones. El código para los archivos que definen objetos de esta forma es __Funcion__. A diferencia de los archivos de HUB3DLang, estos archivos sí son scripts de godot y deben implementar la función __inicializar__. Además, deben implementar la función __gen__ que a partir de un conjunto de argumentos devuelve el objeto generado. El conjunto de argumentos se representa con una lista de dos elementos. El primer elemento de la lista es una lista de argumentos. El segundo elemento es un diccionario. Ambos elementos pueden contener información.
+
+### Comportamiento
+
+Para ser un script de comportamiento válido, debe implementar la función __inicializar(hub, yo, args)__ en lugar de __inicializar(hub)__. El argumento __yo__ se corresponde con el objeto al cual se le está asignando el comportamiento. El argumento __args__ se corresponde con el conjunto de argumentos opcionales que se le pasaron al script al ser creado.  El conjunto de argumentos se representa con una lista de dos elementos. El primer elemento de la lista es una lista de argumentos. El segundo elemento es un diccionario. Ambos elementos pueden contener información.
+
 ### Lotes de comandos
 
 Los lotes de comandos no tienen restricciones adicionales. Cada línea debería ser un comando válido aunque eso no se verifica hasta que cada línea se intenta ejecutar. El código para archivos de lotes de comandos es __SH__. Si el HUB tiene el comando __sh__ y el lote de comandos __INI.gd__ en la carpeta __shell__, tras haberse inicializado ejecutará "sh INI.gd" en la terminal.
