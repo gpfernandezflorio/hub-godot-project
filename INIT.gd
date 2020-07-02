@@ -21,6 +21,8 @@ func _ready():
 		# En el proyecto del repo hub-godot-project vale true ya que es la versión que se va a compilar al final
 		# En el proyecto hub-godot-project-LOCAL vale false ya que es para probar y para compilar para web
 	var userfs = Globals.get("userfs")
+	if userfs:
+		ruta_raiz = ruta_godot_user
 
 	# Este booleano indica si estoy ejecutando una versión compilada
 		# OJO: Si habilito "debug_enabled" al compilar, va a valer false
