@@ -16,7 +16,6 @@ El script principal del HUB es __HUB.gd__. Sin este archivo, el Core sólo mostr
 
 Como ya se mencionó, el Core por sí solo no hace nada; necesita los archivos externos de GDScript para funcionar. Por una restricción del motor de Godot, estos archivos deben estar ubicados en un directorio específico del sistema operativo. A dicho directorio se lo llamará la _ruta_raiz_ del HUB. Dentro de la _ruta_raiz_ debe haber distintas carpetas que organicen todos los tipos de archivos con los que el HUB puede interactuar. Los archivos fuente ya mencionados (los que definen el comportamiento del HUB) deben estar en la carpeta __src__, dentro de la _ruta_raiz_. Estos no deberían ser modificados, a menos que sepan lo que están haciendo.
 
-
 #### Tipos de archivos
 
 Todos los archivos del HUB (a menos que se trate de archivos muy específicos, como los archivos multimedia) deben tener la extensión _.gd_. Sin embargo, existen distintos tipos de archivos con distintas funcionalidades. La mayoría son scripts (es decir, código ejecutable) pero no todos se ejecutan de la misma manera. Una primera restricción para que un archivo _.gd_ sea considerado un script del HUB es que este implemente la función __inicializar(hub)__, que es llamada con el HUB como parámetro cada vez que se adjunta un script a un nodo. El tipo de un archivo se identifica por la carpeta que lo contiene dentro de la _ruta_raiz_ y por el contenido del mismo. La convención es iniciar las dos primeras líneas de cada archivo con el nombre y el tipo del archivo en cuestión, tras doble _#_ y un espacio. Por ejemplo, las dos primeras líneas del archivo __HUB.gd__ son:
@@ -45,6 +44,8 @@ Para crear un nuevo objeto se cuenta con la función del módulo de objetos del 
 Para que el objeto empiece a responder mensajes adecuadamente se le deben adjuntar scripts de comportamiento con la función __agregar_comportamiento(nombre_script)__. Los scripts de comportamiento son otro tipo de archivos del HUB sin ninguna otra particularidad que la de definir funciones. Un objeto sabrá responder un mensaje si alguno de sus scripts de comportamiento asociados implementa la función correspondiente. Para que un archivo sea reconocido como un script de comportamiento por el HUB, este debe estar ubicado en la carpeta __comportamiento__ dentro de la _ruta_raiz_ y usar el código __Comportamiento__ en la segunda línea.
 
 ### Objetos del HUB
+
+#### Generadores
 
 ### Programas
 
@@ -130,9 +131,15 @@ Este módulo manipula los objetos del HUB. Provee las siguientes funciones:
 * crear(hijo_de=HUB.nodo_usuario.mundo) : Crea un nuevo objeto vacío como hijo de _hijo\_de_ en la jerarquía de objetos. Si no se le pasa ningún parámetro, lo crea como hijo del objeto Mundo. Si se le pasa como parámetro _null_, no lo agrega a la jerarquía de objetos.
 * localizar(nombre_completo, desde=HUB.nodo_usuario.mundo) : Ubica a un objeto por su nombre completo. Es decir, si se tiene un objeto _Mano_ hijo de otro objeto que se llama _Brazo_, para ubicar al objeto _Mano_ como parámtro nombre_completo se le debe pasar el texto "Brazo/Mano". Una alternativa es, si ya se tiene al objeto Brazo, pasarlo como parámetro _desde_ para empezar a buscar a partir de él en la jerarquía de objetos. Luego, como parámetro nombre_completo se le debe pasar sólo "Mano". Notar que en el primer caso, no es necesario anteponer el nombre del Mundo ya que por defecto, es a partir de ese objeto que se empieza a buscar. Devuelve un error si no encuentra al objeto solicitado.
 * borrar(nombre_completo, desde=HUB.nodo_usuario.mundo) : Borra el objeto ubicado por su nombre completo. Devuelve un error si no encuentra al objeto solicitado.
+* es_un_objeto(algo) : Determina si _algo_ es un objeto del HUB.
+* agregar_comportamiento_a_objeto(objeto, nombre_script, args=[[],{}]) : Le agrega al objeto _objeto_ el comportamiento con nombre _nombre\_script_. Espera un par lista-diccionario como conjunto de argumentos.
+* generar(nombre, args=[[],{}]) : Generea un objeto a partir del generador llamado _nombre_. Espera un par lista-diccionario como conjunto de argumentos.
 
 También declara los siguientes errores:
 * objeto_inexistente(nombre_completo, desde, stack_error=null) : No se encontró ningún objeto con nombre _nombre\_completo_ en la jerarquía desde el objeto _desde_.
+* generador_inexistente(nombre, desde, stack_error=null) : No se encontró ningún generador con nombre _nombre_.
+* comportamiento_inexistente(nombre, stack_error=null) : No se encontró ningún script de comportamiento con nombre _nombre_.
+* mensaje_desconocido(nombre, stack_error=null) : El objeto receptor no sabe responder al mensaje _nombre_.
 
 ### Bibliotecas
 
@@ -224,7 +231,7 @@ Como los scripts deben ser scripts válidos de GDScript, deben tener la línea "
 
 #### Comandos
 
-Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. El parámetro _argumentos_ se debe interpretar como una lista correspondiente a los argumentos ingresados al lanzar el comando. Esta función puede devolver un resultado para ser entregado al script que solicitó la ejecución del comando. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
+Para ser un comando válido, el script debe implementar la función __comando(argumentos)__. El parámetro _argumentos_ se debe interpretar como un conjunto de argumentos (ver apéndice). Esta función puede devolver un resultado para ser entregado al script que solicitó la ejecución del comando. Opcionalmente, puede implementar las funciones __descripcion()__ que devuelva una descripción corta del comando y __man()__ que devuelva el manual completo del comando. El código para archivos de comandos es __Comando__.
 
 #### Programas
 
@@ -244,11 +251,11 @@ Una forma de definir objetos es a través del lenguaje de generación de objetos
 
 #### Objetos como funciones
 
-Los objetos también se pueden definir con funciones. El código para los archivos que definen objetos de esta forma es __Funcion__. A diferencia de los archivos de HUB3DLang, estos archivos sí son scripts de godot y deben implementar la función __inicializar__. Además, deben implementar la función __gen__ que a partir de un conjunto de argumentos devuelve el objeto generado. El conjunto de argumentos se representa con una lista de dos elementos. El primer elemento de la lista es una lista de argumentos. El segundo elemento es un diccionario. Ambos elementos pueden contener información.
+Los objetos también se pueden definir con funciones. El código para los archivos que definen objetos de esta forma es __Funcion__. A diferencia de los archivos de HUB3DLang, estos archivos sí son scripts de godot y deben implementar la función __inicializar__. Además, deben implementar la función __gen__ que a partir de un conjunto de argumentos (ver apéndice) devuelve el objeto generado.
 
 ### Comportamiento
 
-Para ser un script de comportamiento válido, debe implementar la función __inicializar(hub, yo, args)__ en lugar de __inicializar(hub)__. El argumento __yo__ se corresponde con el objeto al cual se le está asignando el comportamiento. El argumento __args__ se corresponde con el conjunto de argumentos opcionales que se le pasaron al script al ser creado.  El conjunto de argumentos se representa con una lista de dos elementos. El primer elemento de la lista es una lista de argumentos. El segundo elemento es un diccionario. Ambos elementos pueden contener información.
+Para ser un script de comportamiento válido, debe implementar la función __inicializar(hub, yo, args)__ en lugar de __inicializar(hub)__. El argumento __yo__ se corresponde con el objeto al cual se le está asignando el comportamiento. El argumento __args__ se corresponde con el conjunto de argumentos (ver apéndice) opcionales que se le pasaron al script al ser creado.
 
 ### Lotes de comandos
 
@@ -268,3 +275,17 @@ Los scripts se ejecutarán como scripts de GDScript dentro del entorno de Godot.
 ## Instalación
 
 ## Apéndice
+
+### Conjunto de argumentos
+
+Algunos tipos de scripts, (en particular los comandos, los comportamientos y los objetos de tipo función) implementan funciones que toman un __conjunto de argumentos__ como parámetro. Esta estructura es (en pricipio) una lista de dos elementos. El primer elemento de la lista es una lista de argumentos. El segundo elemento es un diccionario. Ambos elementos pueden contener información.
+En el caso de los comandos, el diccionario contiene un par clave-valor por cada argumento iniciado en "-" que se pasó al ejecutar el comando en cuestión. La clave es el primer caracter después del "-" y el valor es el resto. Aquellos argumentos que no comienzan con "-", van a parar a la lista en el orden en que aparecen.
+En el caso de los comportamientos y objetos de tipo función, el diccionario contiene un par clave-valor por cada argumento que contenga el caracter "=" pasado al definir el comportamiento u objeto en cuestión. La clave es el texto previo al "=" y el valor es el texto posterior al mismo. Aquellos argumentos que no incluyan el caracter "=", van a parar a la lista en el orden en que aparecen.
+En cualquier caso, se puede definir una variable _arg\_map_ en en script para que en lugar de recibir los argumentos de esta forma, los reciba como un diccionario más cómodo. La variable _arg\_map_ debe ser un diccionario que incluya el campo _lista_ con una lista que determina los posibles argumentos. Además, puede definir el campo booleano _extra_ si admite una secuencia ilimitada de argumentos o el campo numérico _obligatorios_ para indicar que los primeros argumentos de la lista son obligatorios.
+Cada elemento en la lista debe ser a su vez un diccionario que defina los campos _nombre_ y _codigo_, siendo _codigo_ exactamente un caracter para identificar el argumento. Además, puede definir el campo _default_ para que tenga un valor por defecto cuando este argumento no se pasa explícitamente. Si no se define este campo, se inicializa con _null_. También se puede definir el campo _validar_ cuyo valor será un string con una o más condiciones que debe cumplir el valor del argumento, separadas con ";".
+Las posibles validaciones son: __BOOL__ (debe ser un flag), __NUM__ (debe ser un número), __INT__ (debe ser entero), __DEC__ (debe ser una fracción), __>x__ (mayor a un número x), __<x__ (menor a un número x), __>=x__ (mayor o igual a un número x), __<=x__ (menor o igual a un número x).
+Al pasarle argumentos a estos scripts se pueden usar tanto el código de una letra como el nombre completo pero en el diccionario de argumentos resultante todos los argumentos se indexan por el código.
+En el caso de los comandos, para usar el código de una letra se puede escribir el valor a continuación del código. Para usar el nombre, se debe intercalar el caracter "=" entre el nombre del argumento y el valor.
+
+Ejemplos: #TODO!
+
