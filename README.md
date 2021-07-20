@@ -1,6 +1,6 @@
 # hub-godot-project
 
-Este repositorio contiene los archivos del proyecto de [Godot Engine](https://godotengine.org/) 2.1.4 correspondiente al Core del HUB.
+Este repositorio contiene los archivos del proyecto de [Godot Engine](https://godotengine.org/) correspondiente al Core del HUB.
 
 ## ¿Qué es el HUB? ¿Qué es el Core?
 
@@ -274,6 +274,10 @@ Los scripts se ejecutarán como scripts de GDScript dentro del entorno de Godot.
 
 ## Instalación
 
+## Compilado
+
+
+
 ## Apéndice
 
 ### Conjunto de argumentos
@@ -288,4 +292,3 @@ Al pasarle argumentos a estos scripts se pueden usar tanto el código de una let
 En el caso de los comandos, para usar el código de una letra se puede escribir el valor a continuación del código. Para usar el nombre, se debe intercalar el caracter "=" entre el nombre del argumento y el valor.
 
 Ejemplos: #TODO!
-
