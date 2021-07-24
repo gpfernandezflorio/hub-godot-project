@@ -19,7 +19,7 @@ var instrucciones = \
 	'https://github.com/gpfernandezflorio/hub-godot-project ' + \
 	'y vuelva a intentarlo.\n\nPresione cuaquier tecla para salir.'
 
-var error = false
+var hayError = false
 var F = File.new()
 var D = Directory.new()
 func _ready():
@@ -45,7 +45,7 @@ func _ready():
 		# OJO: Si habilito "debug_enabled" al compilar, va a valer false
 	var compilado = not OS.is_debug_build()
 	# Si estoy en la versión compilada y usando los funetes dentro del programa,
-	if not error and compilado and not userfs:
+	if not hayError and compilado and not userfs:
 		# tengo que copiar los archivos a la carpeta de usuario de Godot (ej: web)
 		var fs_file = ruta_raiz.plus_file("fs.txt")
 		if F.file_exists(fs_file):
@@ -62,14 +62,14 @@ func _ready():
 
 	# Una vez que llego acá, no importa si estoy en versión compilada o no,
 		# los fuentes tienen que estar en la carpeta de usuario de Godot
-	if not error:
+	if not hayError:
 		var ruta_al_HUB = ruta_raiz.plus_file("src").plus_file("HUB.gd")
 		if File.new().file_exists(ruta_al_HUB):
 			var HUB = Node.new()
 			HUB.set_name("HUB")
 			add_child(HUB)
 			HUB.set_script(load(ruta_al_HUB))
-			if not HUB.inicializar(HUB):
+			if not HUB.inicializar():
 				HUB.queue_free()
 				error('Hubo un error al inicializar el HUB.' + \
 				instrucciones)
@@ -79,7 +79,7 @@ func _ready():
 			instrucciones)
 
 func error(mensaje):
-	error = true
+	hayError = true
 	var label = Label.new()
 	label.set_text(mensaje)
 	label.set_autowrap(true)
